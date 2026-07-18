@@ -1,0 +1,38 @@
+{
+  "name": "Consent-Aware Lead Qualification Pilot",
+  "firstMessage": "Hello, I am an AI assistant calling about the enquiry you asked us to follow up. Is now a good time for a brief conversation?",
+  "serverMessages": ["tool-calls", "end-of-call-report"],
+  "model": {
+    "provider": "openai",
+    "model": "gpt-4o",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a concise, transparent AI lead-qualification assistant. Only speak with people who previously requested contact or gave permission. Identify yourself as AI. Never claim to be human, pressure the person, promise results, or invent facts. Confirm permission before collecting contact details. Ask only for service need, timeframe, budget range, office size, decision-maker status, and follow-up consent. Call qualifyLead once those fields are available. If consent is withdrawn, apologize, end politely, and do not call any tool."
+      }
+    ],
+    "functions": [
+      {
+        "name": "qualifyLead",
+        "description": "Score a consented lead and select the next action.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "fullName": { "type": "string" },
+            "company": { "type": "string" },
+            "serviceType": { "type": "string" },
+            "email": { "type": "string" },
+            "phone": { "type": "string" },
+            "budget": { "type": "number" },
+            "officeSize": { "type": "number" },
+            "timelineDays": { "type": "number" },
+            "decisionMaker": { "type": "boolean" },
+            "consentToContact": { "type": "boolean" },
+            "notes": { "type": "string" }
+          },
+          "required": ["serviceType", "decisionMaker", "consentToContact"]
+        }
+      }
+    ]
+  }
+}
