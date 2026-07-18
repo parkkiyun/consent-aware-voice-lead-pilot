@@ -1,5 +1,7 @@
 # Consent-aware AI voice lead pilot
 
+[![Tests](https://github.com/parkkiyun/consent-aware-voice-lead-pilot/actions/workflows/test.yml/badge.svg)](https://github.com/parkkiyun/consent-aware-voice-lead-pilot/actions/workflows/test.yml)
+
 A small, dependency-free Node.js service that demonstrates a real Vapi integration for a 24-hour paid pilot. It receives Vapi Server URL events, scores permission-based leads, and forwards a sanitized outcome to a CRM webhook.
 
 ## What is already implemented
