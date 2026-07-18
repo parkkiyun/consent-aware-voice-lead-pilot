@@ -4,6 +4,31 @@
 
 A small, dependency-free Node.js service that demonstrates a real Vapi integration for a 24-hour paid pilot. It receives Vapi Server URL events, scores permission-based leads, and forwards a sanitized outcome to a CRM webhook.
 
+## Verify it in 60 seconds
+
+1. Open the [live zero-network demo](https://parkkiyun.github.io/consent-aware-voice-lead-pilot/), run the synthetic lead, then withdraw follow-up consent and confirm that no CRM payload is produced.
+2. Open the [public test runs](https://github.com/parkkiyun/consent-aware-voice-lead-pilot/actions/workflows/test.yml) and confirm the latest `main` run is green.
+3. Run `npm test` locally to reproduce the same eleven checks without credentials or paid services.
+
+| Buyer requirement | Inspectable implementation | Executable proof |
+|---|---|---|
+| Vapi function calling | `src/server.mjs`, `examples/assistant-template.json` | `test/server.test.mjs`, `test/artifacts.test.mjs` |
+| Deterministic 0-100 qualification | `src/lead-pilot.mjs` | `test/lead-pilot.test.mjs` |
+| Consent-gated CRM handoff | `src/server.mjs`, `examples/n8n-vapi-lead-pilot.json` | `test/server.test.mjs`, `test/artifacts.test.mjs` |
+| Consent-gated calendar request | `src/calendar-request.mjs`, `src/server.mjs` | `test/calendar-request.test.mjs`, `test/server.test.mjs` |
+| Privacy and duplicate protection | sanitized payload builders and deterministic idempotency keys | consent-withdrawal, unsafe-input, and repeat-event tests |
+
+```mermaid
+flowchart LR
+    A["Vapi event or tool call"] --> B["Validate and normalize"]
+    B --> C["Deterministic lead score"]
+    C --> D{"Explicit consent?"}
+    D -- No --> E["Block CRM/calendar payload"]
+    D -- Yes --> F["Sanitize allowed fields"]
+    F --> G["CRM webhook or calendar request"]
+    G --> H["Idempotency and result log"]
+```
+
 ## What is already implemented
 
 - Vapi `tool-calls` request/response handling for `qualifyLead`
