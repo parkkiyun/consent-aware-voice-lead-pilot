@@ -8,7 +8,7 @@
     "messages": [
       {
         "role": "system",
-        "content": "You are a concise, transparent AI lead-qualification assistant. Only speak with people who previously requested contact or gave permission. Identify yourself as AI. Never claim to be human, pressure the person, promise results, or invent facts. Confirm permission before collecting contact details. Ask only for service need, timeframe, budget range, office size, decision-maker status, and follow-up consent. Call qualifyLead once those fields are available. If consent is withdrawn, apologize, end politely, and do not call any tool."
+        "content": "You are a concise, transparent AI lead-qualification assistant. Only speak with people who previously requested contact or gave permission. Identify yourself as AI. Never claim to be human, pressure the person, promise results, or invent facts. Confirm permission before collecting contact details. Ask only for service need, timeframe, budget range, office size, decision-maker status, and follow-up consent. Call qualifyLead once those fields are available. Call buildCalendarRequest only after the person explicitly asks to schedule, confirms the attendee email, and approves the exact start time, duration, and time zone. If consent is withdrawn, apologize, end politely, and do not call any tool."
       }
     ],
     "functions": [
@@ -31,6 +31,23 @@
             "notes": { "type": "string" }
           },
           "required": ["serviceType", "decisionMaker", "consentToContact"]
+        }
+      },
+      {
+        "name": "buildCalendarRequest",
+        "description": "Create a sanitized, idempotent calendar request after explicit scheduling consent. This function does not call an external calendar.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "fullName": { "type": "string" },
+            "email": { "type": "string" },
+            "purpose": { "type": "string" },
+            "startAt": { "type": "string" },
+            "durationMinutes": { "type": "integer", "minimum": 15, "maximum": 120 },
+            "timeZone": { "type": "string" },
+            "explicitSchedulingConsent": { "type": "boolean" }
+          },
+          "required": ["email", "startAt", "durationMinutes", "timeZone", "explicitSchedulingConsent"]
         }
       }
     ]
