@@ -15,7 +15,7 @@ A small, dependency-free Node.js service that demonstrates a real Vapi integrati
 | Vapi function calling | `src/server.mjs`, `examples/assistant-template.json` | `test/server.test.mjs`, `test/artifacts.test.mjs` |
 | Deterministic 0-100 qualification | `src/qualify.mjs` | `test/qualify.test.mjs` |
 | Consent-gated CRM handoff | `src/server.mjs`, `examples/n8n-vapi-lead-pilot.json` | `test/server.test.mjs`, `test/artifacts.test.mjs` |
-| Consent-gated calendar request | `src/calendar.mjs`, `src/server.mjs` | `test/calendar.test.mjs`, `test/server.test.mjs` |
+| Consent-gated calendar request | `src/calendar.mjs`, `src/server.mjs`, `examples/n8n-vapi-lead-pilot.json` | `test/calendar.test.mjs`, `test/server.test.mjs`, `test/artifacts.test.mjs` |
 | Privacy and duplicate protection | sanitized payload builders and deterministic idempotency keys | consent-withdrawal, unsafe-input, and repeat-event tests |
 
 ```mermaid
@@ -44,7 +44,7 @@ flowchart LR
 - Scheduling guardrail: no calendar request without explicit consent, attendee email, exact time, duration, and IANA time zone
 - Deterministic calendar idempotency key; no live calendar is called by the proof
 - Automated tests using Node's built-in test runner
-- Importable n8n reference workflow for the Vapi-event → score → consent gate → CRM path
+- Importable n8n reference workflow for Vapi qualification, consent-gated CRM handoff, and a validated calendar-request branch that makes no live calendar call
 
 ## Run it
 
@@ -59,7 +59,7 @@ Vapi Server URL: `POST https://your-host.example/vapi/events`
 
 The included `examples/assistant-template.json` is a starting configuration. Replace provider/model settings as needed, configure a Vapi Custom Credential for the `X-Vapi-Secret` header, and point the assistant Server URL to this service.
 
-`examples/n8n-vapi-lead-pilot.json` is a reference workflow that can be imported into a current n8n instance and then wired to the buyer's credentials. The dependency-free Node implementation remains the tested source of truth for scoring and sanitization.
+`examples/n8n-vapi-lead-pilot.json` is a reference workflow that can be imported into a current n8n instance and then wired to the buyer's credentials. Its visible calendar branch validates explicit scheduling consent, attendee email, exact time, duration, and IANA time zone, then returns a sanitized request without calling a live calendar. The dependency-free Node implementation remains the tested source of truth for scoring and sanitization.
 
 ## Zero-setup browser demo
 
