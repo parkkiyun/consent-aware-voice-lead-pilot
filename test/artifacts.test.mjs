@@ -237,4 +237,9 @@ test("Swiss HVAC n8n reference prices exact matches and fails closed on unknown 
   assert.equal(result.pricing.laborRateChf, 95);
   assert.equal(result.pricing.travelChf, 45);
   assert.equal(result.pricing.vatRate, 0.081);
+
+  const demo = await readFile(new URL("../swiss-hvac-quote.html", import.meta.url), "utf8");
+  assert.match(demo, /const statusBadge = document\.querySelector\("#status"\)/);
+  assert.match(demo, /const printButton = document\.querySelector\("#print"\)/);
+  assert.doesNotMatch(demo, /\bstatus\.textContent|\bprint\.addEventListener/);
 });
