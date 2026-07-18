@@ -2,6 +2,7 @@ import http from "node:http";
 import { timingSafeEqual } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { qualifyLead } from "./qualify.mjs";
+import { buildCalendarRequest } from "./calendar.mjs";
 
 const MAX_BODY_BYTES = 256 * 1024;
 
@@ -36,7 +37,9 @@ export function createApp({
       if (message.type === "tool-calls") {
         const calls = Array.isArray(message.toolCallList) ? message.toolCallList : [];
         const results = calls.map((call) => {
-          if (call.name !== "qualifyLead") {
+          const handlers = { qualifyLead, buildCalendarRequest };
+          const handler = handlers[call.name];
+          if (!handler) {
             return {
               name: call.name ?? "unknown",
               toolCallId: call.id,
@@ -47,7 +50,7 @@ export function createApp({
           return {
             name: call.name,
             toolCallId: call.id,
-            result: JSON.stringify(qualifyLead(call.parameters)),
+            result: JSON.stringify(handler(call.parameters)),
           };
         });
         return sendJson(response, 200, { results });
