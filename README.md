@@ -8,7 +8,7 @@ A small, dependency-free Node.js service that demonstrates a real Vapi integrati
 
 1. Open the [live zero-network demo](https://parkkiyun.github.io/consent-aware-voice-lead-pilot/), run the synthetic lead, then withdraw follow-up consent and confirm that no CRM payload is produced.
 2. Open the [public test runs](https://github.com/parkkiyun/consent-aware-voice-lead-pilot/actions/workflows/test.yml) and confirm the latest `main` run is green.
-3. Run `npm test` locally to reproduce the same eleven checks without credentials or paid services.
+3. Run `npm test` locally to reproduce the same thirteen checks without credentials or paid services.
 
 | Buyer requirement | Inspectable implementation | Executable proof |
 |---|---|---|
@@ -16,6 +16,8 @@ A small, dependency-free Node.js service that demonstrates a real Vapi integrati
 | Deterministic 0-100 qualification | `src/qualify.mjs` | `test/qualify.test.mjs` |
 | Consent-gated CRM handoff | `src/server.mjs`, `examples/n8n-vapi-lead-pilot.json` | `test/server.test.mjs`, `test/artifacts.test.mjs` |
 | Consent-gated calendar request | `src/calendar.mjs`, `src/server.mjs`, `examples/n8n-vapi-lead-pilot.json` | `test/calendar.test.mjs`, `test/server.test.mjs`, `test/artifacts.test.mjs` |
+| Fast, minimized ElevenLabs post-call intake | `examples/n8n-elevenlabs-post-call-reference.json` | executable Code-node checks in `test/artifacts.test.mjs` |
+| Sanitized central n8n error envelope | `examples/n8n-error-handler-reference.json` | retry classification and data-exclusion checks in `test/artifacts.test.mjs` |
 | Privacy and duplicate protection | sanitized payload builders and deterministic idempotency keys | consent-withdrawal, unsafe-input, and repeat-event tests |
 
 ```mermaid
@@ -43,8 +45,10 @@ flowchart LR
 - Consent guardrail: no CRM forwarding without explicit follow-up consent
 - Scheduling guardrail: no calendar request without explicit consent, attendee email, exact time, duration, and IANA time zone
 - Deterministic calendar idempotency key; no live calendar is called by the proof
+- Fast-200 ElevenLabs post-call reference with an explicit upstream-HMAC gate, deterministic `conversation_id` idempotency key, and no raw transcript/audio retention
+- Central n8n Error Trigger reference that emits a bounded error envelope without the raw execution stack or workflow data
 - Automated tests using Node's built-in test runner
-- Importable n8n reference workflow for Vapi qualification, consent-gated CRM handoff, and a validated calendar-request branch that makes no live calendar call
+- Three importable, inactive n8n references: Vapi qualification/calendar, ElevenLabs post-call intake, and a central sanitized error handler; none performs a live external write by default
 
 ## Run it
 
@@ -60,6 +64,10 @@ Vapi Server URL: `POST https://your-host.example/vapi/events`
 The included `examples/assistant-template.json` is a starting configuration. Replace provider/model settings as needed, configure a Vapi Custom Credential for the `X-Vapi-Secret` header, and point the assistant Server URL to this service.
 
 `examples/n8n-vapi-lead-pilot.json` is a reference workflow that can be imported into a current n8n instance and then wired to the buyer's credentials. Its visible calendar branch validates explicit scheduling consent, attendee email, exact time, duration, and IANA time zone, then returns a sanitized request without calling a live calendar. The dependency-free Node implementation remains the tested source of truth for scoring and sanitization.
+
+`examples/n8n-elevenlabs-post-call-reference.json` immediately returns HTTP 200, then minimizes supported post-call events into a deterministic queue envelope. It intentionally requires a trusted upstream handler to verify the `ElevenLabs-Signature` HMAC and strip/inject the reference verification header; do not expose or activate it as-is. The ready branch ends at a no-op placeholder so importing the proof cannot write to a queue, CRM, transcript store, or audio store.
+
+`examples/n8n-error-handler-reference.json` begins with n8n's Error Trigger, classifies common retryable failures, and emits only bounded workflow/execution identifiers plus a sanitized error message. Its final alert destination is also a no-op placeholder until retention, credentials, and access controls are approved.
 
 ## Zero-setup browser demo
 
@@ -93,3 +101,5 @@ Outbound calls must only target people who have consented to contact. Recording 
 - Vapi server authentication: https://docs.vapi.ai/server-url/server-authentication
 - Vapi outbound calling: https://docs.vapi.ai/calls/outbound-calling
 - Vapi recording consent plan: https://docs.vapi.ai/security-and-privacy/recording-consent-plan
+- ElevenLabs post-call webhooks: https://elevenlabs.io/docs/eleven-agents/workflows/post-call-webhooks
+- ElevenLabs webhook retries and idempotency: https://elevenlabs.io/docs/eleven-api/resources/webhooks
