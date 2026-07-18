@@ -13,6 +13,8 @@
       .eyebrow { color: #155dc5; font-weight: 850; letter-spacing: .1em; text-transform: uppercase; font-size: 12px; }
       .lede, .small { color: #617086; line-height: 1.55; }
       .notice { padding: 14px 16px; border: 1px solid #b9d2ff; border-radius: 12px; background: #e9f1ff; }
+      .proof { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 12px; }
+      .proof a { padding: 11px 12px; border: 1px solid #cbd8e6; border-radius: 11px; background: white; text-decoration: none; text-align: center; font-size: 12px; }
       .grid { display: grid; grid-template-columns: .9fr 1.1fr; gap: 18px; margin-top: 18px; }
       .panel { padding: 22px; border: 1px solid #d6e0ea; border-radius: 18px; background: white; box-shadow: 0 16px 42px rgba(28,49,82,.07); }
       label { display: grid; gap: 7px; margin-top: 14px; font-size: 13px; font-weight: 750; }
@@ -31,7 +33,7 @@
       .totals { display: grid; grid-template-columns: 1fr auto; gap: 7px 18px; padding-top: 8px; }
       .totals strong { font-size: 18px; }
       a { color: #155dc5; font-weight: 750; }
-      @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
+      @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } .proof { grid-template-columns: 1fr 1fr; } }
       @media print { body { background: white; } main { width: 100%; padding: 0; } .input-panel, .notice, .repo, button { display: none !important; } .grid { display: block; } .panel { border: 0; box-shadow: none; } }
     </style>
   </head>
@@ -41,6 +43,12 @@
       <h1>Devis plomberie/CVC à correspondance exacte</h1>
       <p class="lede">Le moteur n'attribue un prix qu'à une référence ou un alias enregistré exactement. Toute autre ligne reste non chiffrée dans la file d'exception.</p>
       <p class="notice"><strong>Données fictives uniquement.</strong> Les références et les prix ne proviennent pas des fournisseurs cités. Le prototype s'exécute entièrement dans le navigateur et n'envoie aucune donnée.</p>
+      <nav class="proof" aria-label="Preuves vérifiables">
+        <a href="./examples/swiss-hvac-sample-quote.pdf">Exemple PDF</a>
+        <a href="https://github.com/parkkiyun/consent-aware-voice-lead-pilot/blob/main/examples/n8n-swiss-hvac-quote-reference.json">Workflow n8n inactif</a>
+        <a href="https://github.com/parkkiyun/consent-aware-voice-lead-pilot/blob/main/examples/swiss-hvac-acceptance-cases.json">10 cas d'acceptation</a>
+        <a href="https://github.com/parkkiyun/consent-aware-voice-lead-pilot/actions/workflows/test.yml">20 contrôles publics</a>
+      </nav>
       <div class="grid">
         <section class="panel input-panel">
           <h2>Demande d'intervention</h2>
