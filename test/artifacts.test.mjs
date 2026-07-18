@@ -1,18 +1,22 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { runInNewContext } from "node:vm";
 
 const readJson = async (relativePath) =>
   JSON.parse(
     await readFile(new URL(relativePath, import.meta.url), "utf8"),
   );
 
+const runCodeNode = (code, payload) =>
+  runInNewContext(`(() => {${code}})()`, { $json: payload });
+
 test("n8n reference flow preserves the consent gate and sanitized handoff", async () => {
   const workflow = await readJson("../examples/n8n-vapi-lead-pilot.json");
   const byName = Object.fromEntries(workflow.nodes.map((node) => [node.name, node]));
 
   assert.equal(workflow.active, false);
-  assert.equal(workflow.nodes.length, 6);
+  assert.equal(workflow.nodes.length, 8);
   assert.equal(byName["Vapi Webhook"].parameters.responseMode, "responseNode");
   assert.equal(
     byName["Sanitized CRM Handoff"].parameters.body,
@@ -23,9 +27,61 @@ test("n8n reference flow preserves the consent gate and sanitized handoff", asyn
   assert.equal(gateBranches[0][0].node, "Sanitized CRM Handoff");
   assert.equal(gateBranches[1][0].node, "Respond Directly");
 
+  const calendarBranches = workflow.connections["Calendar Request Ready?"].main;
+  assert.equal(
+    calendarBranches[0][0].node,
+    "Return Calendar Request (No Live Call)",
+  );
+  assert.equal(calendarBranches[1][0].node, "Consent to Follow Up?");
+
   const code = byName["Score and Sanitize"].parameters.jsCode;
   assert.match(code, /consentToContact === true/);
+  assert.match(code, /explicitSchedulingConsent !== true/);
+  assert.match(code, /no live calendar API is called/i);
   assert.doesNotMatch(code, /message\.transcript|recordingUrl|recording_url/);
+
+  const calendarInput = {
+    body: {
+      message: {
+        type: "tool-calls",
+        toolCallList: [
+          {
+            id: "calendar-tool-1",
+            name: "buildCalendarRequest",
+            parameters: {
+              explicitSchedulingConsent: true,
+              attendeeEmail: " Buyer@Example.com ",
+              startsAt: "2026-07-20T10:00:00+09:00",
+              durationMinutes: 30,
+              timeZone: "Asia/Seoul",
+              title: " Pilot handoff ",
+              notes: " Synthetic proof only. ",
+            },
+          },
+        ],
+      },
+    },
+  };
+  const calendarResult = runCodeNode(code, calendarInput)[0].json;
+  const calendarToolResult = JSON.parse(
+    calendarResult.responseBody.results[0].result,
+  );
+  assert.equal(calendarResult.calendarRequestReady, true);
+  assert.equal(calendarResult.forwardToCrm, false);
+  assert.equal(calendarResult.calendarRequest.attendeeEmail, "buyer@example.com");
+  assert.equal(calendarResult.calendarRequest.idempotencyKey, "vapi-calendar:calendar-tool-1");
+  assert.equal(calendarToolResult.created, false);
+  assert.equal(calendarToolResult.ready, true);
+
+  const blockedInput = structuredClone(calendarInput);
+  blockedInput.body.message.toolCallList[0].parameters.explicitSchedulingConsent =
+    false;
+  const blockedResult = runCodeNode(code, blockedInput)[0].json;
+  assert.equal(blockedResult.calendarRequestReady, false);
+  assert.equal(
+    JSON.parse(blockedResult.responseBody.results[0].result).reason,
+    "No explicit consent to create a calendar request",
+  );
 });
 
 test("assistant template discloses AI identity and requires follow-up consent", async () => {
