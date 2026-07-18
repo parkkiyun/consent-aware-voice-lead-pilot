@@ -1,0 +1,77 @@
+{
+  "name": "Swiss HVAC exact-match quote reference (synthetic)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [-420, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const catalog = [\n  { supplier: 'Getaz Miauton (synthetic)', sku: 'GETAZ-SYN-001', description: 'Flexible alimentation DN15', aliases: ['flexible alimentation dn15', 'flexible dn15'], unitPriceChf: 42.5 },\n  { supplier: 'Sanitas Troesch (synthetic)', sku: 'SANITAS-SYN-101', description: 'Mitigeur lavabo chrome', aliases: ['mitigeur lavabo chrome'], unitPriceChf: 175 },\n  { supplier: 'Nussbaum (synthetic)', sku: 'NUSSBAUM-SYN-201', description: 'Vanne a bille 1/2', aliases: ['vanne a bille 1/2', 'vanne bille 1/2'], unitPriceChf: 65 },\n];\nconst normalize = value => String(value ?? '').normalize('NFKD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase().replace(/[^a-z0-9\\/.-]+/g, ' ').trim().replace(/\\s+/g, ' ');\nconst money = value => Math.round((Number(value) + Number.EPSILON) * 100) / 100;\nconst index = new Map();\nfor (const item of catalog) for (const key of [item.sku, item.description, ...item.aliases]) index.set(normalize(key), item);\nconst request = String($json.request ?? '2 x flexible DN15; mitigeur lavabo chrome; raccord inconnu');\nconst lines = request.split(/[;\\n]+/).map(value => value.trim()).filter(Boolean).map(original => { const match = original.match(/^\\s*(?:(\\d+(?:[.,]\\d+)?)\\s*(?:x|×)\\s*)?(.+?)\\s*$/i); const quantity = Number(String(match?.[1] ?? '1').replace(',', '.')); if (!Number.isFinite(quantity) || quantity <= 0 || quantity > 1000) throw new Error('Invalid quantity'); return { original, quantity, description: match[2] }; });\nconst matched = []; const exceptions = [];\nfor (const line of lines) { const item = index.get(normalize(line.description)); if (!item) { exceptions.push({ requested: line.original, quantity: line.quantity, reason: 'NO_EXACT_CATALOG_MATCH', priced: false }); continue; } matched.push({ requested: line.original, supplier: item.supplier, sku: item.sku, catalogDescription: item.description, quantity: line.quantity, unitPriceChf: item.unitPriceChf, materialBaseChf: money(line.quantity * item.unitPriceChf), exactMatch: true }); }\nconst laborHours = Number($json.laborHours ?? 0); if (!Number.isFinite(laborHours) || laborHours < 0) throw new Error('Invalid labor hours');\nconst materialBaseChf = money(matched.reduce((sum, row) => sum + row.materialBaseChf, 0));\nconst materialMarginChf = money(materialBaseChf * 0.15); const materialsWithMarginChf = money(materialBaseChf + materialMarginChf); const laborChf = money(laborHours * 95); const travelChf = $json.includeTravel === false ? 0 : 45; const subtotalChf = money(materialsWithMarginChf + laborChf + travelChf); const vatChf = money(subtotalChf * 0.081);\nreturn [{ json: { status: exceptions.length ? 'REVIEW_REQUIRED' : 'READY', reviewRequired: exceptions.length > 0, currency: 'CHF', catalogMode: 'SYNTHETIC_EXACT_MATCH_ONLY', matched, exceptions, pricing: { materialBaseChf, materialMarginRate: 0.15, materialMarginChf, materialsWithMarginChf, laborHours, laborRateChf: 95, laborChf, travelChf, subtotalChf, vatRate: 0.081, vatChf, totalChf: money(subtotalChf + vatChf) } } }];"
+      },
+      "id": "exact-match-quote",
+      "name": "Exact Match Quote",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-180, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "review-gate",
+              "leftValue": "={{ $json.reviewRequired }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "true", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "review-required",
+      "name": "Review Required?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [70, 0]
+    },
+    {
+      "parameters": {},
+      "id": "exception-queue-placeholder",
+      "name": "Exception Queue Placeholder (No Live Write)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [330, -100]
+    },
+    {
+      "parameters": {},
+      "id": "approved-quote-placeholder",
+      "name": "Approved Quote Placeholder (No Live Write)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [330, 100]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": { "main": [[{ "node": "Exact Match Quote", "type": "main", "index": 0 }]] },
+    "Exact Match Quote": { "main": [[{ "node": "Review Required?", "type": "main", "index": 0 }]] },
+    "Review Required?": {
+      "main": [
+        [{ "node": "Exception Queue Placeholder (No Live Write)", "type": "main", "index": 0 }],
+        [{ "node": "Approved Quote Placeholder (No Live Write)", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": { "executionOrder": "v1" },
+  "active": false,
+  "versionId": "7ac8f746-3e34-48ca-a974-532987ad8b6b",
+  "meta": { "templateCredsSetupCompleted": false },
+  "tags": []
+}
