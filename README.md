@@ -13,9 +13,9 @@ A small, dependency-free Node.js service that demonstrates a real Vapi integrati
 | Buyer requirement | Inspectable implementation | Executable proof |
 |---|---|---|
 | Vapi function calling | `src/server.mjs`, `examples/assistant-template.json` | `test/server.test.mjs`, `test/artifacts.test.mjs` |
-| Deterministic 0-100 qualification | `src/lead-pilot.mjs` | `test/lead-pilot.test.mjs` |
+| Deterministic 0-100 qualification | `src/qualify.mjs` | `test/qualify.test.mjs` |
 | Consent-gated CRM handoff | `src/server.mjs`, `examples/n8n-vapi-lead-pilot.json` | `test/server.test.mjs`, `test/artifacts.test.mjs` |
-| Consent-gated calendar request | `src/calendar-request.mjs`, `src/server.mjs` | `test/calendar-request.test.mjs`, `test/server.test.mjs` |
+| Consent-gated calendar request | `src/calendar.mjs`, `src/server.mjs` | `test/calendar.test.mjs`, `test/server.test.mjs` |
 | Privacy and duplicate protection | sanitized payload builders and deterministic idempotency keys | consent-withdrawal, unsafe-input, and repeat-event tests |
 
 ```mermaid
