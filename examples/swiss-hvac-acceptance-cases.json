@@ -1,0 +1,52 @@
+[
+  {
+    "name": "single alias with labor and travel",
+    "input": { "request": "flexible DN15", "laborHours": 1, "includeTravel": true },
+    "expected": { "status": "READY", "matchedCount": 1, "exceptionCount": 0, "materialsWithMarginChf": 48.88, "laborChf": 95, "travelChf": 45, "vatChf": 15.3, "totalChf": 204.18 }
+  },
+  {
+    "name": "exact SKU quantity no travel",
+    "input": { "request": "2 x GETAZ-SYN-001", "laborHours": 0, "includeTravel": false },
+    "expected": { "status": "READY", "matchedCount": 1, "exceptionCount": 0, "materialsWithMarginChf": 97.75, "laborChf": 0, "travelChf": 0, "vatChf": 7.92, "totalChf": 105.67 }
+  },
+  {
+    "name": "French accent normalization",
+    "input": { "request": "mitigeur lavabo chrom\u00e9", "laborHours": 0, "includeTravel": false },
+    "expected": { "status": "READY", "matchedCount": 1, "exceptionCount": 0, "materialsWithMarginChf": 201.25, "laborChf": 0, "travelChf": 0, "vatChf": 16.3, "totalChf": 217.55 }
+  },
+  {
+    "name": "unknown only",
+    "input": { "request": "pi\u00e8ce inconnue", "laborHours": 0, "includeTravel": false },
+    "expected": { "status": "REVIEW_REQUIRED", "matchedCount": 0, "exceptionCount": 1, "materialsWithMarginChf": 0, "laborChf": 0, "travelChf": 0, "vatChf": 0, "totalChf": 0 }
+  },
+  {
+    "name": "mixed demo request",
+    "input": { "request": "2 x flexible DN15; 1 x mitigeur lavabo chrome; raccord cuivre inconnu", "laborHours": 2, "includeTravel": true },
+    "expected": { "status": "REVIEW_REQUIRED", "matchedCount": 2, "exceptionCount": 1, "materialsWithMarginChf": 299, "laborChf": 190, "travelChf": 45, "vatChf": 43.25, "totalChf": 577.25 }
+  },
+  {
+    "name": "Nussbaum alias fractional labor",
+    "input": { "request": "3 x vanne bille 1/2", "laborHours": 1.5, "includeTravel": true },
+    "expected": { "status": "READY", "matchedCount": 1, "exceptionCount": 0, "materialsWithMarginChf": 224.25, "laborChf": 142.5, "travelChf": 45, "vatChf": 33.35, "totalChf": 445.1 }
+  },
+  {
+    "name": "multiline exact and unknown",
+    "input": { "request": "vanne a bille 1/2\nmitigeur lavabo chrome\nraccord cuivre inconnu", "laborHours": 3, "includeTravel": false },
+    "expected": { "status": "REVIEW_REQUIRED", "matchedCount": 2, "exceptionCount": 1, "materialsWithMarginChf": 276, "laborChf": 285, "travelChf": 0, "vatChf": 45.44, "totalChf": 606.44 }
+  },
+  {
+    "name": "decimal quantity and quarter hour",
+    "input": { "request": "2.5 x flexible alimentation DN15", "laborHours": 0.25, "includeTravel": false },
+    "expected": { "status": "READY", "matchedCount": 1, "exceptionCount": 0, "materialsWithMarginChf": 122.19, "laborChf": 23.75, "travelChf": 0, "vatChf": 11.82, "totalChf": 157.76 }
+  },
+  {
+    "name": "repeated exact lines",
+    "input": { "request": "flexible DN15; flexible alimentation DN15", "laborHours": 0, "includeTravel": false },
+    "expected": { "status": "READY", "matchedCount": 2, "exceptionCount": 0, "materialsWithMarginChf": 97.75, "laborChf": 0, "travelChf": 0, "vatChf": 7.92, "totalChf": 105.67 }
+  },
+  {
+    "name": "near match must fail closed",
+    "input": { "request": "flexible DN 15", "laborHours": 0, "includeTravel": false },
+    "expected": { "status": "REVIEW_REQUIRED", "matchedCount": 0, "exceptionCount": 1, "materialsWithMarginChf": 0, "laborChf": 0, "travelChf": 0, "vatChf": 0, "totalChf": 0 }
+  }
+]

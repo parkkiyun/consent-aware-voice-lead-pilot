@@ -19,7 +19,7 @@ A small, dependency-free Node.js service that demonstrates a real Vapi integrati
 | Consent-gated calendar request | `src/calendar.mjs`, `src/server.mjs`, `examples/n8n-vapi-lead-pilot.json` | `test/calendar.test.mjs`, `test/server.test.mjs`, `test/artifacts.test.mjs` |
 | Fast, minimized ElevenLabs post-call intake | `examples/n8n-elevenlabs-post-call-reference.json` | executable Code-node checks in `test/artifacts.test.mjs` |
 | Sanitized central n8n error envelope | `examples/n8n-error-handler-reference.json` | retry classification and data-exclusion checks in `test/artifacts.test.mjs` |
-| Swiss HVAC exact-catalog quoting and PDF output | `src/swissQuote.mjs`, `examples/n8n-swiss-hvac-quote-reference.json`, `examples/swiss-hvac-sample-quote.pdf` | exact-match, exception, pricing, n8n Code-node, and PDF-source parity checks |
+| Swiss HVAC exact-catalog quoting and PDF output | `src/swissQuote.mjs`, `examples/n8n-swiss-hvac-quote-reference.json`, `examples/swiss-hvac-sample-quote.pdf` | ten published acceptance cases plus exact-match, exception, pricing, n8n Code-node, and PDF-source parity checks |
 | Privacy and duplicate protection | sanitized payload builders and deterministic idempotency keys | consent-withdrawal, unsafe-input, and repeat-event tests |
 
 ```mermaid
@@ -51,6 +51,7 @@ flowchart LR
 - Central n8n Error Trigger reference that emits a bounded error envelope without the raw execution stack or workflow data
 - Synthetic Swiss plumbing/HVAC quote engine that prices exact catalog keys only, routes unknown lines to review, and applies 15% material margin, CHF 95/hour labor, CHF 45 travel, and 8.1% VAT deterministically
 - One-page synthetic Swiss HVAC PDF quote generated from a JSON result that is asserted equal to the tested engine output
+- Ten published Swiss quote acceptance cases covering exact SKU/description/alias matches, French accent normalization, quantities, fractional labor, optional travel, mixed exceptions, and deliberate near-match rejection
 - Automated tests using Node's built-in test runner
 - Four importable, inactive n8n references: Vapi qualification/calendar, ElevenLabs post-call intake, a central sanitized error handler, and Swiss HVAC exact-match quoting; none performs a live external write by default
 
