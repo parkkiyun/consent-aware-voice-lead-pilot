@@ -1,0 +1,41 @@
+{
+  "name": "Sanitized central error handler reference",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "error-trigger",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [-300, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const clean = (value, max) => String(value ?? '').replace(/[\\u0000-\\u001f\\u007f]/g, ' ').replace(/\\s+/g, ' ').trim().slice(0, max);\nconst execution = $json.execution ?? {};\nconst workflow = $json.workflow ?? {};\nconst message = clean(execution.error?.message, 300);\nconst retryable = /(?:^|\\D)(429|500|502|503|504)(?:\\D|$)|timeout|econnreset/i.test(message);\nconst envelope = { workflowId: clean(workflow.id, 128), workflowName: clean(workflow.name, 120), executionId: clean(execution.id, 128), lastNode: clean(execution.lastNodeExecuted, 120), occurredAt: clean(execution.stoppedAt ?? execution.startedAt, 40), errorClass: retryable ? 'retryable' : 'manual-review', message };\nreturn [{ json: { envelope, retryable, rawExecutionStored: false, note: 'Connect to an approved log or alert destination after reviewing retention and access controls' } }];"
+      },
+      "id": "sanitize-error-envelope",
+      "name": "Sanitize Error Envelope",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-60, 0]
+    },
+    {
+      "parameters": {},
+      "id": "approved-alert-placeholder",
+      "name": "Approved Alert Placeholder (No Live Write)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [200, 0]
+    }
+  ],
+  "connections": {
+    "Error Trigger": { "main": [[{ "node": "Sanitize Error Envelope", "type": "main", "index": 0 }]] },
+    "Sanitize Error Envelope": { "main": [[{ "node": "Approved Alert Placeholder (No Live Write)", "type": "main", "index": 0 }]] }
+  },
+  "pinData": {},
+  "settings": { "executionOrder": "v1" },
+  "active": false,
+  "versionId": "b6d5b6e5-557a-4807-8612-75d7c4c8de3d",
+  "meta": { "templateCredsSetupCompleted": false },
+  "tags": []
+}
