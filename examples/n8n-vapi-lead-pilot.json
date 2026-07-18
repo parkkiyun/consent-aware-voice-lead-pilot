@@ -17,13 +17,47 @@
     },
     {
       "parameters": {
-        "jsCode": "const message = $json.body?.message ?? $json.message ?? {};\nconst eventType = message.type ?? 'unknown';\nconst scoreLead = (lead = {}) => {\n  if (lead.consentToContact !== true) return { score: 0, tier: 'do-not-contact', lead };\n  let score = 0;\n  if (lead.email || lead.phone) score += 10;\n  if (lead.serviceType) score += 10;\n  if (lead.decisionMaker === true) score += 15;\n  const days = Number(lead.timelineDays);\n  if (Number.isFinite(days) && days <= 30) score += 20; else if (Number.isFinite(days) && days <= 90) score += 15;\n  const budget = Number(lead.budget);\n  if (budget >= 2500) score += 25; else if (budget >= 1000) score += 15;\n  const size = Number(lead.officeSize);\n  if (size >= 20) score += 20; else if (size >= 5) score += 10;\n  return { score, tier: score >= 90 ? 'hot' : score >= 50 ? 'warm' : 'nurture', lead };\n};\nif (eventType === 'tool-calls') {\n  const results = (message.toolCallList ?? []).map(call => ({ name: call.name, toolCallId: call.id, result: JSON.stringify(scoreLead(call.parameters)) }));\n  return [{ json: { forwardToCrm: false, responseBody: { results } } }];\n}\nif (eventType === 'end-of-call-report') {\n  const qualification = scoreLead(message.analysis?.structuredData ?? {});\n  const crmRecord = { callId: message.call?.id ?? '', occurredAt: message.endedAt ?? new Date().toISOString(), endedReason: message.endedReason ?? 'unknown', recordingConsentGranted: Boolean(message.compliance?.recordingConsent?.grantedAt), qualification };\n  return [{ json: { forwardToCrm: qualification.lead.consentToContact === true, crmRecord, responseBody: { accepted: true } } }];\n}\nreturn [{ json: { forwardToCrm: false, responseBody: { accepted: true, ignored: eventType } } }];"
+        "jsCode": "const message = $json.body?.message ?? $json.message ?? {};\nconst eventType = message.type ?? 'unknown';\nconst clean = (value, max) => String(value ?? '').replace(/[\\u0000-\\u001f\\u007f]/g, ' ').replace(/\\s+/g, ' ').trim().slice(0, max);\nconst parseParameters = (value) => {\n  if (typeof value !== 'string') return value ?? {};\n  try { return JSON.parse(value); } catch { return {}; }\n};\nconst scoreLead = (lead = {}) => {\n  if (lead.consentToContact !== true) return { score: 0, tier: 'do-not-contact', lead };\n  let score = 0;\n  if (lead.email || lead.phone) score += 10;\n  if (lead.serviceType) score += 10;\n  if (lead.decisionMaker === true) score += 15;\n  const days = Number(lead.timelineDays);\n  if (Number.isFinite(days) && days <= 30) score += 20; else if (Number.isFinite(days) && days <= 90) score += 15;\n  const budget = Number(lead.budget);\n  if (budget >= 2500) score += 25; else if (budget >= 1000) score += 15;\n  const size = Number(lead.officeSize);\n  if (size >= 20) score += 20; else if (size >= 5) score += 10;\n  return { score, tier: score >= 90 ? 'hot' : score >= 50 ? 'warm' : 'nurture', lead };\n};\nconst buildCalendarRequest = (input = {}, toolCallId = '') => {\n  if (input.explicitSchedulingConsent !== true) return { created: false, ready: false, blocked: true, reason: 'No explicit consent to create a calendar request' };\n  const attendeeEmail = clean(input.attendeeEmail, 254).toLowerCase();\n  const startsAt = clean(input.startsAt, 64);\n  const durationMinutes = Number(input.durationMinutes);\n  const timeZone = clean(input.timeZone, 64);\n  if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(attendeeEmail)) return { created: false, ready: false, blocked: true, reason: 'A valid attendee email is required' };\n  if (!Number.isFinite(Date.parse(startsAt))) return { created: false, ready: false, blocked: true, reason: 'A valid start time is required' };\n  if (!Number.isInteger(durationMinutes) || durationMinutes < 15 || durationMinutes > 120) return { created: false, ready: false, blocked: true, reason: 'Duration must be an integer from 15 to 120 minutes' };\n  try { new Intl.DateTimeFormat('en-US', { timeZone }).format(); } catch { return { created: false, ready: false, blocked: true, reason: 'A valid IANA time zone is required' }; }\n  const request = { attendeeEmail, startsAt: new Date(startsAt).toISOString(), durationMinutes, timeZone, title: clean(input.title, 80) || 'Qualified lead follow-up', notes: clean(input.notes, 500), idempotencyKey: `vapi-calendar:${clean(toolCallId, 128) || [attendeeEmail, startsAt, durationMinutes, timeZone].join(':')}` };\n  return { created: false, ready: true, blocked: false, request, note: 'Reference workflow only; no live calendar API is called' };\n};\nif (eventType === 'tool-calls') {\n  const outcomes = (message.toolCallList ?? []).map(call => {\n    const name = call.name ?? call.function?.name ?? '';\n    const parameters = parseParameters(call.parameters ?? call.function?.arguments);\n    const outcome = name === 'buildCalendarRequest' ? buildCalendarRequest(parameters, call.id) : scoreLead(parameters);\n    return { name, toolCallId: call.id, outcome };\n  });\n  const calendarOutcome = outcomes.find(item => item.name === 'buildCalendarRequest' && item.outcome.ready === true)?.outcome;\n  const results = outcomes.map(item => ({ name: item.name, toolCallId: item.toolCallId, result: JSON.stringify(item.outcome) }));\n  return [{ json: { forwardToCrm: false, calendarRequestReady: Boolean(calendarOutcome), calendarRequest: calendarOutcome?.request ?? null, responseBody: { results } } }];\n}\nif (eventType === 'end-of-call-report') {\n  const qualification = scoreLead(message.analysis?.structuredData ?? {});\n  const crmRecord = { callId: message.call?.id ?? '', occurredAt: message.endedAt ?? new Date().toISOString(), endedReason: message.endedReason ?? 'unknown', recordingConsentGranted: Boolean(message.compliance?.recordingConsent?.grantedAt), qualification };\n  return [{ json: { forwardToCrm: qualification.lead.consentToContact === true, calendarRequestReady: false, crmRecord, responseBody: { accepted: true } } }];\n}\nreturn [{ json: { forwardToCrm: false, calendarRequestReady: false, responseBody: { accepted: true, ignored: eventType } } }];"
       },
       "id": "score-and-sanitize",
       "name": "Score and Sanitize",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [-320, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "calendar-consent-gate",
+              "leftValue": "={{ $json.calendarRequestReady }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "true", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "calendar-request-ready",
+      "name": "Calendar Request Ready?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [-80, -160]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.responseBody) }}",
+        "options": {}
+      },
+      "id": "respond-calendar-request",
+      "name": "Return Calendar Request (No Live Call)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [160, -220]
     },
     {
       "parameters": {
@@ -45,7 +79,7 @@
       "name": "Consent to Follow Up?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [-80, 0]
+      "position": [160, 20]
     },
     {
       "parameters": {
@@ -61,7 +95,7 @@
       "name": "Sanitized CRM Handoff",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [160, -100]
+      "position": [400, -40]
     },
     {
       "parameters": {
@@ -73,7 +107,7 @@
       "name": "Respond After CRM",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
-      "position": [400, -100]
+      "position": [640, -40]
     },
     {
       "parameters": {
@@ -85,12 +119,18 @@
       "name": "Respond Directly",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
-      "position": [160, 100]
+      "position": [400, 120]
     }
   ],
   "connections": {
     "Vapi Webhook": { "main": [[{ "node": "Score and Sanitize", "type": "main", "index": 0 }]] },
-    "Score and Sanitize": { "main": [[{ "node": "Consent to Follow Up?", "type": "main", "index": 0 }]] },
+    "Score and Sanitize": { "main": [[{ "node": "Calendar Request Ready?", "type": "main", "index": 0 }]] },
+    "Calendar Request Ready?": {
+      "main": [
+        [{ "node": "Return Calendar Request (No Live Call)", "type": "main", "index": 0 }],
+        [{ "node": "Consent to Follow Up?", "type": "main", "index": 0 }]
+      ]
+    },
     "Consent to Follow Up?": {
       "main": [
         [{ "node": "Sanitized CRM Handoff", "type": "main", "index": 0 }],
