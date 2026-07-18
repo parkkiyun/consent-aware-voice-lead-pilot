@@ -67,24 +67,33 @@
     </main>
     <script type="module">
       import { buildSwissQuote } from "./src/swissQuote.mjs";
+      const requestInput = document.querySelector("#request");
+      const hoursInput = document.querySelector("#hours");
+      const travelInput = document.querySelector("#travel");
+      const runButton = document.querySelector("#run");
+      const printButton = document.querySelector("#print");
+      const statusBadge = document.querySelector("#status");
+      const matchedBody = document.querySelector("#matched");
+      const exceptionsBody = document.querySelector("#exceptions");
+      const totalsGrid = document.querySelector("#totals");
       const money = (value) => Number(value).toFixed(2);
       const cell = (value) => { const td = document.createElement("td"); td.textContent = value; return td; };
       function render() {
-        const quote = buildSwissQuote({ request: request.value, laborHours: hours.value, includeTravel: travel.checked });
-        status.textContent = quote.status === "READY" ? "PRÊT" : "VÉRIFICATION REQUISE";
-        status.className = `status ${quote.status === "READY" ? "ready" : "review"}`;
-        matched.replaceChildren(...quote.matched.map((row) => { const tr = document.createElement("tr"); tr.append(cell(row.sku), cell(row.catalogDescription), cell(row.quantity), cell(money(row.materialBaseChf))); return tr; }));
-        exceptions.replaceChildren(...quote.exceptions.map((row) => { const tr = document.createElement("tr"); tr.append(cell(row.requested), cell("AUCUNE CORRESPONDANCE EXACTE — non chiffré")); return tr; }));
+        const quote = buildSwissQuote({ request: requestInput.value, laborHours: hoursInput.value, includeTravel: travelInput.checked });
+        statusBadge.textContent = quote.status === "READY" ? "PRÊT" : "VÉRIFICATION REQUISE";
+        statusBadge.className = `status ${quote.status === "READY" ? "ready" : "review"}`;
+        matchedBody.replaceChildren(...quote.matched.map((row) => { const tr = document.createElement("tr"); tr.append(cell(row.sku), cell(row.catalogDescription), cell(row.quantity), cell(money(row.materialBaseChf))); return tr; }));
+        exceptionsBody.replaceChildren(...quote.exceptions.map((row) => { const tr = document.createElement("tr"); tr.append(cell(row.requested), cell("AUCUNE CORRESPONDANCE EXACTE — non chiffré")); return tr; }));
         const p = quote.pricing;
-        totals.replaceChildren();
+        totalsGrid.replaceChildren();
         for (const [label, value] of [["Matériel + marge 15%", p.materialsWithMarginChf], ["Main-d'œuvre", p.laborChf], ["Déplacement", p.travelChf], ["Sous-total", p.subtotalChf], ["TVA 8.1%", p.vatChf], ["Total CHF", p.totalChf]]) {
           const left = document.createElement(label === "Total CHF" ? "strong" : "span"); left.textContent = label;
           const right = document.createElement(label === "Total CHF" ? "strong" : "span"); right.textContent = money(value);
-          totals.append(left, right);
+          totalsGrid.append(left, right);
         }
       }
-      run.addEventListener("click", render);
-      print.addEventListener("click", () => window.print());
+      runButton.addEventListener("click", render);
+      printButton.addEventListener("click", () => window.print());
       render();
     </script>
   </body>
