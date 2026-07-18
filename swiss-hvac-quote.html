@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Prototype devis plomberie/CVC — correspondance exacte</title>
+    <style>
+      :root { font-family: Inter, ui-sans-serif, system-ui, sans-serif; color: #172033; background: #eef3f8; }
+      * { box-sizing: border-box; }
+      body { margin: 0; }
+      main { width: min(1080px, calc(100% - 32px)); margin: 0 auto; padding: 36px 0 56px; }
+      h1 { margin: 6px 0 10px; font-size: clamp(30px, 5vw, 50px); letter-spacing: -.04em; }
+      .eyebrow { color: #155dc5; font-weight: 850; letter-spacing: .1em; text-transform: uppercase; font-size: 12px; }
+      .lede, .small { color: #617086; line-height: 1.55; }
+      .notice { padding: 14px 16px; border: 1px solid #b9d2ff; border-radius: 12px; background: #e9f1ff; }
+      .grid { display: grid; grid-template-columns: .9fr 1.1fr; gap: 18px; margin-top: 18px; }
+      .panel { padding: 22px; border: 1px solid #d6e0ea; border-radius: 18px; background: white; box-shadow: 0 16px 42px rgba(28,49,82,.07); }
+      label { display: grid; gap: 7px; margin-top: 14px; font-size: 13px; font-weight: 750; }
+      textarea, input { width: 100%; padding: 11px 12px; border: 1px solid #c8d4e1; border-radius: 10px; font: inherit; }
+      textarea { min-height: 130px; resize: vertical; }
+      .check { display: flex; align-items: center; gap: 9px; }
+      .check input { width: 18px; }
+      button { margin-top: 16px; padding: 11px 15px; border: 0; border-radius: 10px; background: #155dc5; color: white; font-weight: 800; cursor: pointer; }
+      button.secondary { margin-left: 8px; background: #e9eef4; color: #26364c; }
+      .status { display: inline-block; padding: 7px 10px; border-radius: 999px; font-size: 12px; font-weight: 850; }
+      .status.ready { color: #087451; background: #e7f7f0; }
+      .status.review { color: #a33b2f; background: #fff0ed; }
+      table { width: 100%; border-collapse: collapse; margin: 14px 0 18px; font-size: 13px; }
+      th, td { padding: 9px 8px; border-bottom: 1px solid #e1e7ee; text-align: left; vertical-align: top; }
+      th { color: #627086; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+      .totals { display: grid; grid-template-columns: 1fr auto; gap: 7px 18px; padding-top: 8px; }
+      .totals strong { font-size: 18px; }
+      a { color: #155dc5; font-weight: 750; }
+      @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
+      @media print { body { background: white; } main { width: 100%; padding: 0; } .input-panel, .notice, .repo, button { display: none !important; } .grid { display: block; } .panel { border: 0; box-shadow: none; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">Prototype synthétique · aucun appel réseau</p>
+      <h1>Devis plomberie/CVC à correspondance exacte</h1>
+      <p class="lede">Le moteur n'attribue un prix qu'à une référence ou un alias enregistré exactement. Toute autre ligne reste non chiffrée dans la file d'exception.</p>
+      <p class="notice"><strong>Données fictives uniquement.</strong> Les références et les prix ne proviennent pas des fournisseurs cités. Le prototype s'exécute entièrement dans le navigateur et n'envoie aucune donnée.</p>
+      <div class="grid">
+        <section class="panel input-panel">
+          <h2>Demande d'intervention</h2>
+          <label>Lignes libres, séparées par un point-virgule ou un retour à la ligne
+            <textarea id="request">2 x flexible DN15; 1 x mitigeur lavabo chromé; raccord cuivre inconnu</textarea>
+          </label>
+          <label>Heures de main-d'œuvre<input id="hours" type="number" min="0" step="0.25" value="2" /></label>
+          <label class="check"><input id="travel" type="checkbox" checked /> Ajouter déplacement CHF 45</label>
+          <button id="run">Générer le devis</button>
+          <button class="secondary" id="print">Imprimer / PDF</button>
+          <p class="small">Règles: marge matériel 15%, main-d'œuvre CHF 95/h, TVA 8.1%. Les éléments inconnus ne sont jamais estimés.</p>
+          <a class="repo" href="https://github.com/parkkiyun/consent-aware-voice-lead-pilot">Code source et tests</a>
+        </section>
+        <section class="panel" aria-live="polite">
+          <span id="status" class="status review">VÉRIFICATION REQUISE</span>
+          <h2>Résultat du devis</h2>
+          <h3>Correspondances exactes</h3>
+          <table><thead><tr><th>Référence</th><th>Désignation</th><th>Qté</th><th>Base CHF</th></tr></thead><tbody id="matched"></tbody></table>
+          <h3>Exceptions non chiffrées</h3>
+          <table><thead><tr><th>Demande</th><th>Motif</th></tr></thead><tbody id="exceptions"></tbody></table>
+          <div class="totals" id="totals"></div>
+        </section>
+      </div>
+    </main>
+    <script type="module">
+      import { buildSwissQuote } from "./src/swissQuote.mjs";
+      const money = (value) => Number(value).toFixed(2);
+      const cell = (value) => { const td = document.createElement("td"); td.textContent = value; return td; };
+      function render() {
+        const quote = buildSwissQuote({ request: request.value, laborHours: hours.value, includeTravel: travel.checked });
+        status.textContent = quote.status === "READY" ? "PRÊT" : "VÉRIFICATION REQUISE";
+        status.className = `status ${quote.status === "READY" ? "ready" : "review"}`;
+        matched.replaceChildren(...quote.matched.map((row) => { const tr = document.createElement("tr"); tr.append(cell(row.sku), cell(row.catalogDescription), cell(row.quantity), cell(money(row.materialBaseChf))); return tr; }));
+        exceptions.replaceChildren(...quote.exceptions.map((row) => { const tr = document.createElement("tr"); tr.append(cell(row.requested), cell("AUCUNE CORRESPONDANCE EXACTE — non chiffré")); return tr; }));
+        const p = quote.pricing;
+        totals.replaceChildren();
+        for (const [label, value] of [["Matériel + marge 15%", p.materialsWithMarginChf], ["Main-d'œuvre", p.laborChf], ["Déplacement", p.travelChf], ["Sous-total", p.subtotalChf], ["TVA 8.1%", p.vatChf], ["Total CHF", p.totalChf]]) {
+          const left = document.createElement(label === "Total CHF" ? "strong" : "span"); left.textContent = label;
+          const right = document.createElement(label === "Total CHF" ? "strong" : "span"); right.textContent = money(value);
+          totals.append(left, right);
+        }
+      }
+      run.addEventListener("click", render);
+      print.addEventListener("click", () => window.print());
+      render();
+    </script>
+  </body>
+</html>
