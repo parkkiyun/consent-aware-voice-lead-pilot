@@ -1,0 +1,56 @@
+{
+  "input": {
+    "request": "2 x flexible DN15; 1 x mitigeur lavabo chrome; raccord cuivre inconnu",
+    "laborHours": 2,
+    "includeTravel": true
+  },
+  "quote": {
+    "status": "REVIEW_REQUIRED",
+    "currency": "CHF",
+    "catalogMode": "SYNTHETIC_EXACT_MATCH_ONLY",
+    "matched": [
+      {
+        "requested": "2 x flexible DN15",
+        "supplier": "Getaz Miauton (synthetic)",
+        "sku": "GETAZ-SYN-001",
+        "catalogDescription": "Flexible alimentation DN15",
+        "quantity": 2,
+        "unitPriceChf": 42.5,
+        "materialBaseChf": 85,
+        "exactMatch": true
+      },
+      {
+        "requested": "1 x mitigeur lavabo chrome",
+        "supplier": "Sanitas Troesch (synthetic)",
+        "sku": "SANITAS-SYN-101",
+        "catalogDescription": "Mitigeur lavabo chrome",
+        "quantity": 1,
+        "unitPriceChf": 175,
+        "materialBaseChf": 175,
+        "exactMatch": true
+      }
+    ],
+    "exceptions": [
+      {
+        "requested": "raccord cuivre inconnu",
+        "quantity": 1,
+        "reason": "NO_EXACT_CATALOG_MATCH",
+        "priced": false
+      }
+    ],
+    "pricing": {
+      "materialBaseChf": 260,
+      "materialMarginRate": 0.15,
+      "materialMarginChf": 39,
+      "materialsWithMarginChf": 299,
+      "laborHours": 2,
+      "laborRateChf": 95,
+      "laborChf": 190,
+      "travelChf": 45,
+      "subtotalChf": 534,
+      "vatRate": 0.081,
+      "vatChf": 43.25,
+      "totalChf": 577.25
+    }
+  }
+}

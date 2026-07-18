@@ -19,7 +19,7 @@ A small, dependency-free Node.js service that demonstrates a real Vapi integrati
 | Consent-gated calendar request | `src/calendar.mjs`, `src/server.mjs`, `examples/n8n-vapi-lead-pilot.json` | `test/calendar.test.mjs`, `test/server.test.mjs`, `test/artifacts.test.mjs` |
 | Fast, minimized ElevenLabs post-call intake | `examples/n8n-elevenlabs-post-call-reference.json` | executable Code-node checks in `test/artifacts.test.mjs` |
 | Sanitized central n8n error envelope | `examples/n8n-error-handler-reference.json` | retry classification and data-exclusion checks in `test/artifacts.test.mjs` |
-| Swiss HVAC exact-catalog quoting | `src/swissQuote.mjs`, `examples/n8n-swiss-hvac-quote-reference.json` | exact-match, exception, pricing, and n8n Code-node checks |
+| Swiss HVAC exact-catalog quoting and PDF output | `src/swissQuote.mjs`, `examples/n8n-swiss-hvac-quote-reference.json`, `examples/swiss-hvac-sample-quote.pdf` | exact-match, exception, pricing, n8n Code-node, and PDF-source parity checks |
 | Privacy and duplicate protection | sanitized payload builders and deterministic idempotency keys | consent-withdrawal, unsafe-input, and repeat-event tests |
 
 ```mermaid
@@ -50,6 +50,7 @@ flowchart LR
 - Fast-200 ElevenLabs post-call reference with an explicit upstream-HMAC gate, deterministic `conversation_id` idempotency key, and no raw transcript/audio retention
 - Central n8n Error Trigger reference that emits a bounded error envelope without the raw execution stack or workflow data
 - Synthetic Swiss plumbing/HVAC quote engine that prices exact catalog keys only, routes unknown lines to review, and applies 15% material margin, CHF 95/hour labor, CHF 45 travel, and 8.1% VAT deterministically
+- One-page synthetic Swiss HVAC PDF quote generated from a JSON result that is asserted equal to the tested engine output
 - Automated tests using Node's built-in test runner
 - Four importable, inactive n8n references: Vapi qualification/calendar, ElevenLabs post-call intake, a central sanitized error handler, and Swiss HVAC exact-match quoting; none performs a live external write by default
 
@@ -73,6 +74,8 @@ The included `examples/assistant-template.json` is a starting configuration. Rep
 `examples/n8n-error-handler-reference.json` begins with n8n's Error Trigger, classifies common retryable failures, and emits only bounded workflow/execution identifiers plus a sanitized error message. Its final alert destination is also a no-op placeholder until retention, credentials, and access controls are approved.
 
 `examples/n8n-swiss-hvac-quote-reference.json` contains only fictitious supplier references and prices. Its Code node performs deterministic exact-key matching; any unknown line is left unpriced and sent to a no-op exception branch. Replace the synthetic catalog only after the buyer supplies an authorized CSV, PDF, or API source and approves the production output destination.
+
+`examples/swiss-hvac-sample-quote.pdf` is a generated one-page artifact backed by `examples/swiss-hvac-sample-quote.json`. The test suite asserts that the JSON quote equals the current engine output exactly; `scripts/build_swiss_quote_sample.py` can regenerate the PDF. The document is explicitly marked synthetic and leaves the unknown line unpriced.
 
 ## Zero-setup browser demo
 
