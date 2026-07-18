@@ -1,0 +1,25 @@
+{
+  "message": {
+    "type": "tool-calls",
+    "call": { "id": "demo-call-001" },
+    "toolCallList": [
+      {
+        "id": "tool-call-001",
+        "name": "qualifyLead",
+        "parameters": {
+          "fullName": "Demo Buyer",
+          "company": "Demo Solar",
+          "serviceType": "Inbound lead qualification",
+          "email": "buyer@example.com",
+          "phone": "+442071234567",
+          "budget": 3000,
+          "officeSize": 25,
+          "timelineDays": 14,
+          "decisionMaker": true,
+          "consentToContact": true,
+          "notes": "Wants a paid pilot before rollout"
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,108 @@
+{
+  "name": "Vapi consent-aware lead qualification pilot",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "vapi-lead-pilot",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "vapi-webhook",
+      "name": "Vapi Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-560, 0],
+      "webhookId": "replace-after-import"
+    },
+    {
+      "parameters": {
+        "jsCode": "const message = $json.body?.message ?? $json.message ?? {};\nconst eventType = message.type ?? 'unknown';\nconst scoreLead = (lead = {}) => {\n  if (lead.consentToContact !== true) return { score: 0, tier: 'do-not-contact', lead };\n  let score = 0;\n  if (lead.email || lead.phone) score += 10;\n  if (lead.serviceType) score += 10;\n  if (lead.decisionMaker === true) score += 15;\n  const days = Number(lead.timelineDays);\n  if (Number.isFinite(days) && days <= 30) score += 20; else if (Number.isFinite(days) && days <= 90) score += 15;\n  const budget = Number(lead.budget);\n  if (budget >= 2500) score += 25; else if (budget >= 1000) score += 15;\n  const size = Number(lead.officeSize);\n  if (size >= 20) score += 20; else if (size >= 5) score += 10;\n  return { score, tier: score >= 90 ? 'hot' : score >= 50 ? 'warm' : 'nurture', lead };\n};\nif (eventType === 'tool-calls') {\n  const results = (message.toolCallList ?? []).map(call => ({ name: call.name, toolCallId: call.id, result: JSON.stringify(scoreLead(call.parameters)) }));\n  return [{ json: { forwardToCrm: false, responseBody: { results } } }];\n}\nif (eventType === 'end-of-call-report') {\n  const qualification = scoreLead(message.analysis?.structuredData ?? {});\n  const crmRecord = { callId: message.call?.id ?? '', occurredAt: message.endedAt ?? new Date().toISOString(), endedReason: message.endedReason ?? 'unknown', recordingConsentGranted: Boolean(message.compliance?.recordingConsent?.grantedAt), qualification };\n  return [{ json: { forwardToCrm: qualification.lead.consentToContact === true, crmRecord, responseBody: { accepted: true } } }];\n}\nreturn [{ json: { forwardToCrm: false, responseBody: { accepted: true, ignored: eventType } } }];"
+      },
+      "id": "score-and-sanitize",
+      "name": "Score and Sanitize",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-320, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "consent-gate",
+              "leftValue": "={{ $json.forwardToCrm }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "true", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "consent-gate",
+      "name": "Consent to Follow Up?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [-80, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://REPLACE-WITH-CRM-WEBHOOK.example",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify($json.crmRecord) }}",
+        "options": { "timeout": 5000 }
+      },
+      "id": "crm-handoff",
+      "name": "Sanitized CRM Handoff",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [160, -100]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ accepted: true }) }}",
+        "options": {}
+      },
+      "id": "respond-after-crm",
+      "name": "Respond After CRM",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [400, -100]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.responseBody) }}",
+        "options": {}
+      },
+      "id": "respond-directly",
+      "name": "Respond Directly",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [160, 100]
+    }
+  ],
+  "connections": {
+    "Vapi Webhook": { "main": [[{ "node": "Score and Sanitize", "type": "main", "index": 0 }]] },
+    "Score and Sanitize": { "main": [[{ "node": "Consent to Follow Up?", "type": "main", "index": 0 }]] },
+    "Consent to Follow Up?": {
+      "main": [
+        [{ "node": "Sanitized CRM Handoff", "type": "main", "index": 0 }],
+        [{ "node": "Respond Directly", "type": "main", "index": 0 }]
+      ]
+    },
+    "Sanitized CRM Handoff": { "main": [[{ "node": "Respond After CRM", "type": "main", "index": 0 }]] }
+  },
+  "pinData": {},
+  "settings": { "executionOrder": "v1" },
+  "active": false,
+  "versionId": "0f8b75fb-e62b-4f82-9a38-a436c2044a62",
+  "meta": { "templateCredsSetupCompleted": false },
+  "tags": []
+}
