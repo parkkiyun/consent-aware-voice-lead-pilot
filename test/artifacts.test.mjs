@@ -36,11 +36,18 @@ test("assistant template discloses AI identity and requires follow-up consent", 
   const qualifyLead = assistant.model.functions.find(
     (fn) => fn.name === "qualifyLead",
   );
+  const buildCalendarRequest = assistant.model.functions.find(
+    (fn) => fn.name === "buildCalendarRequest",
+  );
 
   assert.deepEqual(assistant.serverMessages, ["tool-calls", "end-of-call-report"]);
   assert.match(systemMessage, /Identify yourself as AI/);
   assert.match(systemMessage, /If consent is withdrawn/);
   assert.ok(qualifyLead.parameters.required.includes("consentToContact"));
+  assert.match(systemMessage, /explicitly asks to schedule/);
+  assert.ok(
+    buildCalendarRequest.parameters.required.includes("explicitSchedulingConsent"),
+  );
 
   const demo = await readFile(new URL("../index.html", import.meta.url), "utf8");
   assert.match(demo, /import \{ qualifyLead \} from "\.\/src\/qualify\.mjs"/);

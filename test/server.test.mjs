@@ -60,6 +60,42 @@ test("returns a Vapi tool result for qualification", async () => {
   });
 });
 
+test("returns a consent-gated calendar request without calling an external calendar", async () => {
+  await withServer({ webhookSecret: "secret" }, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/vapi/events`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-vapi-secret": "secret" },
+      body: JSON.stringify({
+        message: {
+          type: "tool-calls",
+          toolCallList: [
+            {
+              id: "tool-calendar-1",
+              name: "buildCalendarRequest",
+              parameters: {
+                fullName: "Sam Buyer",
+                email: "sam@example.com",
+                purpose: "Pilot consultation",
+                startAt: "2026-07-20T09:00:00+09:00",
+                durationMinutes: 30,
+                timeZone: "Asia/Seoul",
+                explicitSchedulingConsent: true,
+              },
+            },
+          ],
+        },
+      }),
+    });
+
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    const result = JSON.parse(body.results[0].result);
+    assert.equal(result.allowed, true);
+    assert.equal(result.request.attendee.email, "sam@example.com");
+    assert.equal(result.request.source, "voice-lead-pilot");
+  });
+});
+
 test("forwards only a sanitized end-of-call record", async () => {
   const forwarded = [];
   const fetchImpl = async (_url, options) => {
