@@ -1,0 +1,83 @@
+{
+  "name": "ElevenLabs post-call reliability reference",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "elevenlabs-post-call-reference",
+        "responseMode": "onReceived",
+        "options": { "responseCode": 200 }
+      },
+      "id": "elevenlabs-webhook",
+      "name": "ElevenLabs Webhook (Fast 200)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-520, 0],
+      "webhookId": "replace-after-import"
+    },
+    {
+      "parameters": {
+        "jsCode": "const event = $json.body ?? $json;\nconst clean = (value, max) => String(value ?? '').replace(/[\\u0000-\\u001f\\u007f]/g, ' ').replace(/\\s+/g, ' ').trim().slice(0, max);\nconst type = clean(event.type, 64);\nconst data = event.data && typeof event.data === 'object' ? event.data : {};\nconst conversationId = clean(data.conversation_id, 128);\nconst agentId = clean(data.agent_id, 128);\nconst eventTimestamp = clean(event.event_timestamp, 32);\nconst supported = type === 'post_call_transcription' || type === 'call_initiation_failure';\nconst signatureVerifiedUpstream = String($json.headers?.['x-reference-signature-verified'] ?? '').toLowerCase() === 'true';\nconst valid = Boolean(conversationId && eventTimestamp);\nconst stableKey = valid ? `elevenlabs:${type}:${conversationId}` : '';\nconst record = { eventType: type, conversationId, agentId, eventTimestamp, status: clean(data.status, 32), callSuccessful: data.analysis?.call_successful === true, failureReason: clean(data.failure_reason, 120), idempotencyKey: stableKey };\nconst reason = !signatureVerifiedUpstream ? 'HMAC must be verified by a trusted upstream handler' : !supported ? 'Unsupported event type' : !valid ? 'conversation_id and event_timestamp are required' : '';\nreturn [{ json: { readyForQueue: signatureVerifiedUpstream && supported && valid, rawPayloadStored: false, record, reason, note: 'Reference only: connect the ready branch to a durable queue after upstream HMAC verification' } }];"
+      },
+      "id": "normalize-and-minimize",
+      "name": "Normalize and Minimize",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-280, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "queue-gate",
+              "leftValue": "={{ $json.readyForQueue }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "true", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "ready-for-queue",
+      "name": "Ready for Durable Queue?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [-40, 0]
+    },
+    {
+      "parameters": {},
+      "id": "durable-queue-placeholder",
+      "name": "Durable Queue Placeholder (No Live Write)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [220, -100]
+    },
+    {
+      "parameters": {},
+      "id": "reject-invalid",
+      "name": "Reject Unverified or Invalid",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [220, 100]
+    }
+  ],
+  "connections": {
+    "ElevenLabs Webhook (Fast 200)": { "main": [[{ "node": "Normalize and Minimize", "type": "main", "index": 0 }]] },
+    "Normalize and Minimize": { "main": [[{ "node": "Ready for Durable Queue?", "type": "main", "index": 0 }]] },
+    "Ready for Durable Queue?": {
+      "main": [
+        [{ "node": "Durable Queue Placeholder (No Live Write)", "type": "main", "index": 0 }],
+        [{ "node": "Reject Unverified or Invalid", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": { "executionOrder": "v1" },
+  "active": false,
+  "versionId": "7a123f33-8f16-4aa0-8d14-27b8d6ee5af1",
+  "meta": { "templateCredsSetupCompleted": false },
+  "tags": []
+}
