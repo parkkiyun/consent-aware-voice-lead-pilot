@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "A dependency-free, testable Vapi webhook pilot for consent-based lead qualification.",
+  "description": "Dependency-free, testable Voice AI webhook proofs for consent, reliability, and minimized handoffs.",
   "scripts": {
     "start": "node src/server.mjs",
     "test": "node --test"
