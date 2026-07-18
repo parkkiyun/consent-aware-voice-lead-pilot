@@ -41,4 +41,11 @@ test("assistant template discloses AI identity and requires follow-up consent", 
   assert.match(systemMessage, /Identify yourself as AI/);
   assert.match(systemMessage, /If consent is withdrawn/);
   assert.ok(qualifyLead.parameters.required.includes("consentToContact"));
+
+  const demo = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(demo, /import \{ qualifyLead \} from "\.\/src\/qualify\.mjs"/);
+  assert.match(demo, /runs entirely in your browser and sends nothing anywhere/);
+  assert.match(demo, /CRM handoff blocked: no explicit consent/);
+  assert.match(demo, /No payload produced\./);
+  assert.doesNotMatch(demo, /fetch\s*\(/);
 });
