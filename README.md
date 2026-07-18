@@ -5,6 +5,7 @@ A small, dependency-free Node.js service that demonstrates a real Vapi integrati
 ## What is already implemented
 
 - Vapi `tool-calls` request/response handling for `qualifyLead`
+- Vapi `tool-calls` handling for a consent-gated, sanitized calendar request
 - Deterministic hot/warm/nurture scoring with input validation
 - Brief-matched scoring across budget, timeline, office size, decision-maker status, need, and contactability; hot threshold is 90/100
 - End-of-call report processing with idempotency
@@ -13,6 +14,8 @@ A small, dependency-free Node.js service that demonstrates a real Vapi integrati
 - 256 KiB request limit and five-second CRM timeout
 - Privacy guardrail: raw transcripts and recording URLs are never forwarded
 - Consent guardrail: no CRM forwarding without explicit follow-up consent
+- Scheduling guardrail: no calendar request without explicit consent, attendee email, exact time, duration, and IANA time zone
+- Deterministic calendar idempotency key; no live calendar is called by the proof
 - Automated tests using Node's built-in test runner
 - Importable n8n reference workflow for the Vapi-event → score → consent gate → CRM path
 
