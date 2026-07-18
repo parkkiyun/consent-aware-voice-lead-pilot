@@ -35,6 +35,8 @@ The included `examples/assistant-template.json` is a starting configuration. Rep
 
 Serve the repository directory and open `index.html` to exercise the same deterministic scorer without credentials or outbound network requests. The page begins with synthetic data and visibly blocks the CRM payload when follow-up consent is withdrawn.
 
+Live demo: https://parkkiyun.github.io/consent-aware-voice-lead-pilot/
+
 ```bash
 python -m http.server 8080
 ```
