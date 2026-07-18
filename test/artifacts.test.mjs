@@ -205,3 +205,36 @@ test("central n8n error reference strips execution data and classifies retryable
   assert.equal(result.envelope.errorClass, "retryable");
   assert.doesNotMatch(JSON.stringify(result), /secret stack|do not forward/);
 });
+
+test("Swiss HVAC n8n reference prices exact matches and fails closed on unknown lines", async () => {
+  const workflow = await readJson("../examples/n8n-swiss-hvac-quote-reference.json");
+  const byName = Object.fromEntries(workflow.nodes.map((node) => [node.name, node]));
+
+  assert.equal(workflow.active, false);
+  assert.equal(workflow.nodes.length, 5);
+  assert.equal(
+    workflow.connections["Review Required?"].main[0][0].node,
+    "Exception Queue Placeholder (No Live Write)",
+  );
+  assert.equal(
+    workflow.connections["Review Required?"].main[1][0].node,
+    "Approved Quote Placeholder (No Live Write)",
+  );
+
+  const code = byName["Exact Match Quote"].parameters.jsCode;
+  const result = runCodeNode(code, {
+    request: "2 x flexible DN15; mitigeur lavabo chromé; pièce inconnue",
+    laborHours: 2,
+    includeTravel: true,
+  })[0].json;
+
+  assert.equal(result.catalogMode, "SYNTHETIC_EXACT_MATCH_ONLY");
+  assert.equal(result.matched.length, 2);
+  assert.equal(result.exceptions.length, 1);
+  assert.equal(result.exceptions[0].priced, false);
+  assert.equal(result.status, "REVIEW_REQUIRED");
+  assert.equal(result.pricing.materialMarginRate, 0.15);
+  assert.equal(result.pricing.laborRateChf, 95);
+  assert.equal(result.pricing.travelChf, 45);
+  assert.equal(result.pricing.vatRate, 0.081);
+});
