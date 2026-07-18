@@ -31,6 +31,16 @@ The included `examples/assistant-template.json` is a starting configuration. Rep
 
 `examples/n8n-vapi-lead-pilot.json` is a reference workflow that can be imported into a current n8n instance and then wired to the buyer's credentials. The dependency-free Node implementation remains the tested source of truth for scoring and sanitization.
 
+## Zero-setup browser demo
+
+Serve the repository directory and open `index.html` to exercise the same deterministic scorer without credentials or outbound network requests. The page begins with synthetic data and visibly blocks the CRM payload when follow-up consent is withdrawn.
+
+```bash
+python -m http.server 8080
+```
+
+Then open `http://localhost:8080/`. Do not paste real customer data, credentials, transcripts, or recordings into the demo.
+
 ## Paid 24-hour pilot scope
 
 1. Adapt qualification fields and score thresholds to one buyer workflow.

@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <title>Consent-aware voice lead pilot</title>
+    <style>
+      :root {
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #172033;
+        background: #eef3f8;
+        --ink: #172033;
+        --muted: #627086;
+        --line: #d7e0ea;
+        --panel: #ffffff;
+        --blue: #195fd3;
+        --blue-soft: #e9f1ff;
+        --green: #0b7b57;
+        --green-soft: #e8f7f1;
+        --red: #b83a3a;
+        --red-soft: #fff0f0;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100vh; }
+      button, input { font: inherit; }
+      .shell { width: min(1160px, calc(100% - 32px)); margin: 0 auto; padding: 42px 0 56px; }
+      header { display: grid; grid-template-columns: 1fr auto; gap: 28px; align-items: end; margin-bottom: 24px; }
+      .eyebrow { margin: 0 0 10px; color: var(--blue); font-size: 13px; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; }
+      h1 { margin: 0; max-width: 720px; font-size: clamp(34px, 5vw, 58px); line-height: 1.02; letter-spacing: -.04em; }
+      .lede { margin: 16px 0 0; max-width: 760px; color: var(--muted); font-size: 17px; line-height: 1.6; }
+      .repo { color: var(--blue); text-decoration: none; font-weight: 750; white-space: nowrap; }
+      .repo:hover { text-decoration: underline; }
+      .notice { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 18px; padding: 14px 16px; border: 1px solid #b9d2ff; border-radius: 14px; background: var(--blue-soft); color: #23446f; line-height: 1.45; }
+      .grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(340px, .95fr); gap: 18px; }
+      .panel { border: 1px solid var(--line); border-radius: 20px; background: var(--panel); box-shadow: 0 18px 50px rgba(28, 49, 82, .08); }
+      .form-panel { padding: 24px; }
+      .result-panel { overflow: hidden; }
+      h2 { margin: 0 0 18px; font-size: 20px; letter-spacing: -.015em; }
+      .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+      label { display: grid; gap: 7px; color: #344158; font-size: 13px; font-weight: 750; }
+      label.wide { grid-column: 1 / -1; }
+      input[type="text"], input[type="email"], input[type="number"] { width: 100%; border: 1px solid #cbd6e2; border-radius: 10px; padding: 11px 12px; color: var(--ink); background: #fbfdff; outline: none; }
+      input:focus { border-color: #5b8fe2; box-shadow: 0 0 0 3px rgba(25, 95, 211, .12); }
+      .checks { display: grid; gap: 10px; margin-top: 16px; }
+      .check { display: flex; gap: 10px; align-items: center; font-size: 14px; font-weight: 700; }
+      .check input { width: 18px; height: 18px; accent-color: var(--blue); }
+      .actions { display: flex; gap: 10px; margin-top: 20px; }
+      button { border: 0; border-radius: 10px; padding: 11px 16px; cursor: pointer; font-weight: 800; }
+      .primary { background: var(--blue); color: white; }
+      .secondary { background: #edf1f5; color: #334158; }
+      button:hover { filter: brightness(.97); }
+      .result-head { display: flex; justify-content: space-between; gap: 16px; align-items: center; padding: 24px; border-bottom: 1px solid var(--line); }
+      .score { font-size: 42px; font-weight: 850; line-height: 1; letter-spacing: -.04em; }
+      .score small { color: var(--muted); font-size: 16px; font-weight: 700; }
+      .tier { border-radius: 999px; padding: 7px 10px; font-size: 12px; font-weight: 850; text-transform: uppercase; letter-spacing: .07em; }
+      .tier.hot { color: var(--green); background: var(--green-soft); }
+      .tier.warm, .tier.nurture { color: #8b5a00; background: #fff5db; }
+      .tier.do-not-contact { color: var(--red); background: var(--red-soft); }
+      .result-body { padding: 24px; }
+      .result-body h3 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+      ul { margin: 0 0 20px; padding-left: 20px; line-height: 1.65; }
+      .next { margin: 0 0 20px; padding: 12px 14px; border-radius: 12px; background: #f4f7fa; line-height: 1.5; }
+      .gate { margin: 0 0 20px; padding: 12px 14px; border-radius: 12px; font-weight: 800; }
+      .gate.allowed { color: var(--green); background: var(--green-soft); }
+      .gate.blocked { color: var(--red); background: var(--red-soft); }
+      pre { margin: 0; max-height: 300px; overflow: auto; border-radius: 12px; padding: 16px; background: #111a2b; color: #dce7f7; font: 12px/1.55 ui-monospace, SFMono-Regular, Consolas, monospace; }
+      footer { margin-top: 20px; color: var(--muted); font-size: 13px; line-height: 1.55; }
+      @media (max-width: 820px) { header, .grid { grid-template-columns: 1fr; } header { align-items: start; } .fields { grid-template-columns: 1fr; } label.wide { grid-column: auto; } }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <header>
+        <div>
+          <p class="eyebrow">Inspectable pilot · no network calls</p>
+          <h1>Consent-aware lead qualification</h1>
+          <p class="lede">A browser demo of the same deterministic scorer used by the tested Vapi webhook. Toggle consent to verify that CRM handoff is blocked before any follow-up payload is produced.</p>
+        </div>
+        <a class="repo" href="https://github.com/parkkiyun/consent-aware-voice-lead-pilot">View source &amp; tests →</a>
+      </header>
+      <div class="notice" role="note"><strong>Privacy:</strong><span>This page runs entirely in your browser and sends nothing anywhere. Use only the supplied synthetic example—never paste credentials or real customer data.</span></div>
+      <div class="grid">
+        <section class="panel form-panel" aria-labelledby="form-title">
+          <h2 id="form-title">Synthetic lead input</h2>
+          <form id="lead-form" autocomplete="off">
+            <div class="fields">
+              <label>Full name<input name="fullName" type="text" value="Sam Example" maxlength="120" /></label>
+              <label>Company<input name="company" type="text" value="Example Solar" maxlength="160" /></label>
+              <label class="wide">Service need<input name="serviceType" type="text" value="Inbound voice lead qualification" maxlength="120" /></label>
+              <label>Email<input name="email" type="email" value="sam@example.com" /></label>
+              <label>Phone<input name="phone" type="text" value="+12025550123" /></label>
+              <label>Budget (USD)<input name="budget" type="number" min="0" value="3000" /></label>
+              <label>Timeline (days)<input name="timelineDays" type="number" min="0" value="14" /></label>
+              <label>Office size<input name="officeSize" type="number" min="0" value="25" /></label>
+            </div>
+            <div class="checks">
+              <label class="check"><input name="decisionMaker" type="checkbox" checked /> Decision-maker involved</label>
+              <label class="check"><input name="consentToContact" type="checkbox" checked /> Explicit consent for follow-up</label>
+            </div>
+            <div class="actions">
+              <button class="primary" type="submit">Run qualification</button>
+              <button class="secondary" id="withdraw" type="button">Withdraw consent</button>
+            </div>
+          </form>
+        </section>
+        <section class="panel result-panel" aria-live="polite" aria-labelledby="result-title">
+          <div class="result-head">
+            <div><h2 id="result-title">Qualification result</h2><div class="score"><span id="score">100</span><small>/100</small></div></div>
+            <span class="tier hot" id="tier">hot</span>
+          </div>
+          <div class="result-body">
+            <p class="gate allowed" id="gate">CRM handoff allowed: explicit consent present</p>
+            <h3>Reasons</h3><ul id="reasons"></ul>
+            <h3>Next action</h3><p class="next" id="next-action"></p>
+            <h3>Sanitized CRM payload</h3><pre id="payload"></pre>
+          </div>
+        </section>
+      </div>
+      <footer>This proof demonstrates qualification and privacy boundaries only. It is not a production telephony deployment, legal review, compliance guarantee, or promise of business results.</footer>
+    </main>
+    <script type="module">
+      import { qualifyLead } from "./src/qualify.mjs";
+      const form = document.querySelector("#lead-form");
+      const score = document.querySelector("#score");
+      const tier = document.querySelector("#tier");
+      const gate = document.querySelector("#gate");
+      const reasons = document.querySelector("#reasons");
+      const nextAction = document.querySelector("#next-action");
+      const payload = document.querySelector("#payload");
+      function formValue() {
+        const data = new FormData(form);
+        return {
+          fullName: data.get("fullName"), company: data.get("company"), serviceType: data.get("serviceType"),
+          email: data.get("email"), phone: data.get("phone"), budget: data.get("budget"),
+          timelineDays: data.get("timelineDays"), officeSize: data.get("officeSize"),
+          decisionMaker: data.has("decisionMaker"), consentToContact: data.has("consentToContact"),
+        };
+      }
+      function render() {
+        const result = qualifyLead(formValue());
+        const allowed = result.lead.consentToContact;
+        score.textContent = result.score;
+        tier.textContent = result.tier;
+        tier.className = `tier ${result.tier}`;
+        gate.textContent = allowed ? "CRM handoff allowed: explicit consent present" : "CRM handoff blocked: no explicit consent";
+        gate.className = `gate ${allowed ? "allowed" : "blocked"}`;
+        reasons.replaceChildren(...result.reasons.map((reason) => { const item = document.createElement("li"); item.textContent = reason; return item; }));
+        nextAction.textContent = result.nextAction;
+        const sanitized = allowed ? {
+          fullName: result.lead.fullName, company: result.lead.company, serviceType: result.lead.serviceType,
+          email: result.lead.email, phone: result.lead.phone, score: result.score, tier: result.tier,
+          reasons: result.reasons, consentToContact: true,
+        } : null;
+        payload.textContent = sanitized ? JSON.stringify(sanitized, null, 2) : "No payload produced.";
+      }
+      form.addEventListener("submit", (event) => { event.preventDefault(); render(); });
+      document.querySelector("#withdraw").addEventListener("click", () => { form.elements.consentToContact.checked = false; render(); });
+      render();
+    </script>
+  </body>
+</html>
