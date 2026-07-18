@@ -112,3 +112,96 @@ test("assistant template discloses AI identity and requires follow-up consent", 
   assert.match(demo, /No payload produced\./);
   assert.doesNotMatch(demo, /fetch\s*\(/);
 });
+
+test("ElevenLabs reference acknowledges quickly and emits only a minimized idempotent envelope", async () => {
+  const workflow = await readJson(
+    "../examples/n8n-elevenlabs-post-call-reference.json",
+  );
+  const byName = Object.fromEntries(workflow.nodes.map((node) => [node.name, node]));
+
+  assert.equal(workflow.active, false);
+  assert.equal(workflow.nodes.length, 5);
+  assert.equal(
+    byName["ElevenLabs Webhook (Fast 200)"].parameters.responseMode,
+    "onReceived",
+  );
+  assert.equal(
+    workflow.connections["Ready for Durable Queue?"].main[0][0].node,
+    "Durable Queue Placeholder (No Live Write)",
+  );
+  assert.equal(
+    workflow.connections["Ready for Durable Queue?"].main[1][0].node,
+    "Reject Unverified or Invalid",
+  );
+
+  const code = byName["Normalize and Minimize"].parameters.jsCode;
+  const payload = {
+    headers: { "x-reference-signature-verified": "true" },
+    body: {
+      type: "post_call_transcription",
+      event_timestamp: 1784400000,
+      data: {
+        conversation_id: "conv_synthetic_1",
+        agent_id: "agent_synthetic_1",
+        status: "done",
+        transcript: [{ role: "user", message: "sensitive synthetic text" }],
+        full_audio: "synthetic-base64-audio",
+        metadata: { phone_number: "+10000000000" },
+        analysis: { call_successful: true },
+      },
+    },
+  };
+  const result = runCodeNode(code, payload)[0].json;
+  assert.equal(result.readyForQueue, true);
+  assert.equal(result.rawPayloadStored, false);
+  assert.equal(
+    result.record.idempotencyKey,
+    "elevenlabs:post_call_transcription:conv_synthetic_1",
+  );
+  assert.deepEqual(Object.keys(result.record), [
+    "eventType",
+    "conversationId",
+    "agentId",
+    "eventTimestamp",
+    "status",
+    "callSuccessful",
+    "failureReason",
+    "idempotencyKey",
+  ]);
+  assert.doesNotMatch(JSON.stringify(result), /sensitive synthetic text|synthetic-base64-audio|\+10000000000/);
+
+  const unverified = structuredClone(payload);
+  unverified.headers["x-reference-signature-verified"] = "false";
+  const blocked = runCodeNode(code, unverified)[0].json;
+  assert.equal(blocked.readyForQueue, false);
+  assert.match(blocked.reason, /HMAC must be verified/);
+});
+
+test("central n8n error reference strips execution data and classifies retryable failures", async () => {
+  const workflow = await readJson("../examples/n8n-error-handler-reference.json");
+  const byName = Object.fromEntries(workflow.nodes.map((node) => [node.name, node]));
+
+  assert.equal(workflow.active, false);
+  assert.equal(workflow.nodes.length, 3);
+  assert.equal(byName["Error Trigger"].type, "n8n-nodes-base.errorTrigger");
+  assert.equal(
+    workflow.connections["Sanitize Error Envelope"].main[0][0].node,
+    "Approved Alert Placeholder (No Live Write)",
+  );
+
+  const code = byName["Sanitize Error Envelope"].parameters.jsCode;
+  const result = runCodeNode(code, {
+    workflow: { id: "wf-1", name: "Synthetic client flow" },
+    execution: {
+      id: "exec-1",
+      lastNodeExecuted: "CRM HTTP",
+      stoppedAt: "2026-07-19T02:00:00.000Z",
+      error: { message: "HTTP 503 timeout", stack: "secret stack and payload" },
+      data: { resultData: { sensitive: "do not forward" } },
+    },
+  })[0].json;
+  assert.equal(result.retryable, true);
+  assert.equal(result.rawExecutionStored, false);
+  assert.equal(result.envelope.errorClass, "retryable");
+  assert.doesNotMatch(JSON.stringify(result), /secret stack|do not forward/);
+});
