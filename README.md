@@ -8,7 +8,8 @@ A small, dependency-free Node.js service that demonstrates a real Vapi integrati
 
 1. Open the [live zero-network demo](https://parkkiyun.github.io/consent-aware-voice-lead-pilot/), run the synthetic lead, then withdraw follow-up consent and confirm that no CRM payload is produced.
 2. Open the [public test runs](https://github.com/parkkiyun/consent-aware-voice-lead-pilot/actions/workflows/test.yml) and confirm the latest `main` run is green.
-3. Run `npm test` locally to reproduce the same thirteen checks without credentials or paid services.
+3. Open the [Swiss HVAC exact-match quote prototype](https://parkkiyun.github.io/consent-aware-voice-lead-pilot/swiss-hvac-quote.html) and confirm that an unknown line remains unpriced.
+4. Run `npm test` locally to reproduce the same eighteen checks without credentials or paid services.
 
 | Buyer requirement | Inspectable implementation | Executable proof |
 |---|---|---|
@@ -18,6 +19,7 @@ A small, dependency-free Node.js service that demonstrates a real Vapi integrati
 | Consent-gated calendar request | `src/calendar.mjs`, `src/server.mjs`, `examples/n8n-vapi-lead-pilot.json` | `test/calendar.test.mjs`, `test/server.test.mjs`, `test/artifacts.test.mjs` |
 | Fast, minimized ElevenLabs post-call intake | `examples/n8n-elevenlabs-post-call-reference.json` | executable Code-node checks in `test/artifacts.test.mjs` |
 | Sanitized central n8n error envelope | `examples/n8n-error-handler-reference.json` | retry classification and data-exclusion checks in `test/artifacts.test.mjs` |
+| Swiss HVAC exact-catalog quoting | `src/swissQuote.mjs`, `examples/n8n-swiss-hvac-quote-reference.json` | exact-match, exception, pricing, and n8n Code-node checks |
 | Privacy and duplicate protection | sanitized payload builders and deterministic idempotency keys | consent-withdrawal, unsafe-input, and repeat-event tests |
 
 ```mermaid
@@ -47,8 +49,9 @@ flowchart LR
 - Deterministic calendar idempotency key; no live calendar is called by the proof
 - Fast-200 ElevenLabs post-call reference with an explicit upstream-HMAC gate, deterministic `conversation_id` idempotency key, and no raw transcript/audio retention
 - Central n8n Error Trigger reference that emits a bounded error envelope without the raw execution stack or workflow data
+- Synthetic Swiss plumbing/HVAC quote engine that prices exact catalog keys only, routes unknown lines to review, and applies 15% material margin, CHF 95/hour labor, CHF 45 travel, and 8.1% VAT deterministically
 - Automated tests using Node's built-in test runner
-- Three importable, inactive n8n references: Vapi qualification/calendar, ElevenLabs post-call intake, and a central sanitized error handler; none performs a live external write by default
+- Four importable, inactive n8n references: Vapi qualification/calendar, ElevenLabs post-call intake, a central sanitized error handler, and Swiss HVAC exact-match quoting; none performs a live external write by default
 
 ## Run it
 
@@ -69,11 +72,15 @@ The included `examples/assistant-template.json` is a starting configuration. Rep
 
 `examples/n8n-error-handler-reference.json` begins with n8n's Error Trigger, classifies common retryable failures, and emits only bounded workflow/execution identifiers plus a sanitized error message. Its final alert destination is also a no-op placeholder until retention, credentials, and access controls are approved.
 
+`examples/n8n-swiss-hvac-quote-reference.json` contains only fictitious supplier references and prices. Its Code node performs deterministic exact-key matching; any unknown line is left unpriced and sent to a no-op exception branch. Replace the synthetic catalog only after the buyer supplies an authorized CSV, PDF, or API source and approves the production output destination.
+
 ## Zero-setup browser demo
 
 Serve the repository directory and open `index.html` to exercise the same deterministic scorer without credentials or outbound network requests. The page begins with synthetic data and visibly blocks the CRM payload when follow-up consent is withdrawn.
 
 Live demo: https://parkkiyun.github.io/consent-aware-voice-lead-pilot/
+
+Swiss HVAC quote demo: https://parkkiyun.github.io/consent-aware-voice-lead-pilot/swiss-hvac-quote.html
 
 ```bash
 python -m http.server 8080
