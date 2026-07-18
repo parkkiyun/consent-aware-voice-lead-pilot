@@ -32,6 +32,9 @@
       .repo { color: var(--blue); text-decoration: none; font-weight: 750; white-space: nowrap; }
       .repo:hover { text-decoration: underline; }
       .notice { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 18px; padding: 14px 16px; border: 1px solid #b9d2ff; border-radius: 14px; background: var(--blue-soft); color: #23446f; line-height: 1.45; }
+      .offer { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: center; margin-bottom: 18px; padding: 16px; border: 1px solid #b8dfd1; border-radius: 14px; background: var(--green-soft); color: #185640; }
+      .offer strong { font-size: 18px; }
+      .offer span { line-height: 1.5; }
       .grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(340px, .95fr); gap: 18px; }
       .panel { border: 1px solid var(--line); border-radius: 20px; background: var(--panel); box-shadow: 0 18px 50px rgba(28, 49, 82, .08); }
       .form-panel { padding: 24px; }
@@ -80,6 +83,7 @@
         <a class="repo" href="https://github.com/parkkiyun/consent-aware-voice-lead-pilot">View source &amp; tests →</a>
       </header>
       <div class="notice" role="note"><strong>Privacy:</strong><span>This page runs entirely in your browser and sends nothing anywhere. Use only the supplied synthetic example—never paste credentials or real customer data.</span></div>
+      <div class="offer" role="note"><strong>Paid 24-hour pilot</strong><span>One buyer-owned workflow, fixed written acceptance criteria, tests, failure logging, and handoff notes. Work starts only after scope acceptance and cleared payment; reply in the proposal thread that brought you here.</span></div>
       <div class="grid">
         <section class="panel form-panel" aria-labelledby="form-title">
           <h2 id="form-title">Synthetic lead input</h2>

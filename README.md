@@ -9,7 +9,7 @@ A small, dependency-free Node.js service that demonstrates a real Vapi integrati
 1. Open the [live zero-network demo](https://parkkiyun.github.io/consent-aware-voice-lead-pilot/), run the synthetic lead, then withdraw follow-up consent and confirm that no CRM payload is produced.
 2. Open the [public test runs](https://github.com/parkkiyun/consent-aware-voice-lead-pilot/actions/workflows/test.yml) and confirm the latest `main` run is green.
 3. Open the [Swiss HVAC exact-match quote prototype](https://parkkiyun.github.io/consent-aware-voice-lead-pilot/swiss-hvac-quote.html) and confirm that an unknown line remains unpriced.
-4. Run `npm test` locally to reproduce the same eighteen checks without credentials or paid services.
+4. Run `npm test` locally to reproduce the same twenty checks without credentials or paid services.
 
 | Buyer requirement | Inspectable implementation | Executable proof |
 |---|---|---|
@@ -93,6 +93,8 @@ python -m http.server 8080
 Then open `http://localhost:8080/`. Do not paste real customer data, credentials, transcripts, or recordings into the demo.
 
 ## Paid 24-hour pilot scope
+
+Commercial entry: USD 900 fixed for the scope below, starting only after written acceptance and cleared payment. If you received this repository in a proposal, reply in that same thread so scope and payment details remain private.
 
 1. Adapt qualification fields and score thresholds to one buyer workflow.
 2. Configure one Vapi assistant and one consented test call path.
